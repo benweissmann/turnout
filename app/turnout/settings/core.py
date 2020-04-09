@@ -100,6 +100,7 @@ FIRST_PARTY_APPS = [
     "event_tracking",
     "action",
     "absentee",
+    "official",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + FIRST_PARTY_APPS
@@ -402,6 +403,11 @@ LOGGING = {
             "level": env.str("DJANGO_LOGGING_LEVEL", default="INFO"),
             "propagate": False,
         },
+        "official": {
+            "handlers": [handler],
+            "level": env.str("DJANGO_LOGGING_LEVEL", default="INFO"),
+            "propagate": False,
+        },
     },
 }
 
@@ -413,3 +419,10 @@ LOGGING = {
 TARGETSMART_KEY = env.str("TARGETSMART_KEY", default=None)
 
 #### END TARGETSMART CONFIGURATION
+
+
+#### ELECTION OFFICIALS CONFIGURATION
+
+USVOTEFOUNDATION_KEY = env.str("USVOTEFOUNDATION_KEY", default=None)
+
+#### END ELECTION OFFICIALS CONFIGURATION
