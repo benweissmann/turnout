@@ -97,6 +97,9 @@ FIRST_PARTY_APPS = [
     "register",
     "mailer",
     "storage",
+    "event_tracking",
+    "action",
+    "absentee",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + FIRST_PARTY_APPS
