@@ -17,14 +17,17 @@ class ReadOnlyModelAdmin(admin.ModelAdmin):
 @admin.register(models.Office)
 class OfficeInlineAdmin(ReadOnlyModelAdmin):
     model = models.Office
-    fields = ("hours", "website", "email", "phone", "fax")
+    fields = ("hours", )
 
 
 @admin.register(models.Address)
 class AddressInlineAdmin(ReadOnlyModelAdmin):
     model = models.Address
-    fields = ("address", "address2", "address3", "city", "state", "zipcode")
-
+    fields = (
+        "address", "address2", "address3", "city", "state", "zipcode",
+        "website", "email", "phone", "fax",
+        "is_physical", "is_regular_mail"
+    )
 
 @admin.register(models.Region)
 class RegionAdmin(ReadOnlyModelAdmin):

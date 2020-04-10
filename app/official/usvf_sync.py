@@ -111,10 +111,7 @@ def scrape_offices(session: requests.Session, regions: Sequence[Region]) -> None
                     external_id=office["id"],
                     region_id=int(office["region"].split("/")[-1]),
                     hours=office.get("hours"),
-                    website=office.get("website"),
-                    email=office.get("main_email"),
-                    phone=office.get("main_phone_number"),
-                    fax=office.get("main_fax_number"),
+                    notes=office.get("notes"),
                 ),
             )
 
@@ -135,6 +132,11 @@ def scrape_offices(session: requests.Session, regions: Sequence[Region]) -> None
                         city=address.get("city"),
                         state_id=address.get("state"),
                         zipcode=address.get("zip"),
+
+                        website=office.get("website"),
+                        email=office.get("main_email"),
+                        phone=office.get("main_phone_number"),
+                        fax=office.get("main_fax_number"),
 
                         process_domestic_registrations="DOM_VR" in address["functions"],
                         process_absentee_requests="DOM_REQ" in address["functions"],
@@ -166,12 +168,13 @@ def scrape_offices(session: requests.Session, regions: Sequence[Region]) -> None
     # Update any records that are already in our database
     Office.objects.bulk_update(
         [x[1] for x in offices_dict.values() if x[0] == Action.UPDATE],
-        ["hours", "website", "email", "phone", "fax"]
+        ["hours", "notes"]
     )
     Address.objects.bulk_update(
         [x[1] for x in addresses_dict.values() if x[0] == Action.UPDATE], 
         [
             "address", "address2", "address3", "city", "state", "zipcode",
+            "website", "email", "phone", "fax", "is_physical", "is_regular_mail",
             "process_domestic_registrations", "process_absentee_requests", 
             "process_absentee_ballots", "process_overseas_requests", "process_overseas_ballots"
         ]

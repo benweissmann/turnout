@@ -30,11 +30,7 @@ class Region(USVFModel):
 class Office(USVFModel):
     region = models.ForeignKey(Region, null=True, on_delete=models.CASCADE)
     hours = models.TextField(null=True)
-    # location = PointField(null=True)
-    website = models.URLField(null=True)
-    email = models.EmailField(null=True)
-    phone = PhoneNumberField(null=True)
-    fax = PhoneNumberField(null=True)
+    notes = models.TextField(null=True)
 
     class Meta:
         ordering = ["external_id"]
@@ -48,6 +44,14 @@ class Address(USVFModel):
     city = models.TextField(null=True)
     state = models.ForeignKey("election.State", null=True, on_delete=models.PROTECT)
     zipcode = models.TextField(null=True, validators=[zip_validator])
+
+    website = models.URLField(null=True)
+    email = models.EmailField(null=True)
+    phone = PhoneNumberField(null=True)
+    fax = PhoneNumberField(null=True)
+
+    is_physical = models.BooleanField(default=False)
+    is_regular_mail = models.BooleanField(default=False)
 
     process_domestic_registrations = models.BooleanField(default=False)
     process_absentee_requests = models.BooleanField(default=False)
