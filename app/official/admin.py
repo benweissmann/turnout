@@ -14,7 +14,7 @@ class ReadOnlyModelAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
-class AddressInlineAdmin(ReadOnlyModelAdmin, NestedStackedInline):
+class AddressInlineAdmin(NestedStackedInline):
     model = models.Address
     parent_model = models.Region
     fields = (
@@ -28,7 +28,7 @@ class AddressInlineAdmin(ReadOnlyModelAdmin, NestedStackedInline):
         admin.TabularInline.__init__(self, parent_model, admin_site)
 
 
-class OfficeInlineAdmin(ReadOnlyModelAdmin, NestedStackedInline):
+class OfficeInlineAdmin(NestedStackedInline):
     model = models.Office
     fields = ("hours", "notes")
     inlines = [AddressInlineAdmin]
@@ -39,7 +39,7 @@ class OfficeInlineAdmin(ReadOnlyModelAdmin, NestedStackedInline):
 
 
 @admin.register(models.Region)
-class RegionAdmin(ReadOnlyModelAdmin, NestedModelAdmin):
+class RegionAdmin(NestedModelAdmin):
     list_display = ("name", "municipality", "county", "state",)
     list_filter = ("state",)
     inlines = [OfficeInlineAdmin]
