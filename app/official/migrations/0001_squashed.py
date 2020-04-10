@@ -18,24 +18,6 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Office',
-            fields=[
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('modified_at', models.DateTimeField(auto_now=True)),
-                ('external_id', models.IntegerField(primary_key=True, serialize=False)),
-                ('external_updated', models.DateTimeField(null=True)),
-                ('hours', models.TextField(null=True)),
-                ('email', models.EmailField(max_length=254, null=True)),
-                ('fax', phonenumber_field.modelfields.PhoneNumberField(max_length=128, null=True, region=None)),
-                ('phone', phonenumber_field.modelfields.PhoneNumberField(max_length=128, null=True, region=None)),
-                ('website', models.URLField(null=True)),
-            ],
-            options={
-                'abstract': False,
-                'ordering': ['external_id'],
-            },
-        ),
-        migrations.CreateModel(
             name='Region',
             fields=[
                 ('created_at', models.DateTimeField(auto_now_add=True)),
@@ -49,6 +31,25 @@ class Migration(migrations.Migration):
                 ('state', models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, to='election.State')),
             ],
             options={
+                'ordering': ['external_id'],
+            },
+        ),
+        migrations.CreateModel(
+            name='Office',
+            fields=[
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('modified_at', models.DateTimeField(auto_now=True)),
+                ('external_id', models.IntegerField(primary_key=True, serialize=False)),
+                ('external_updated', models.DateTimeField(null=True)),
+                ('region', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='official.Region')),
+                ('hours', models.TextField(null=True)),
+                ('email', models.EmailField(max_length=254, null=True)),
+                ('fax', phonenumber_field.modelfields.PhoneNumberField(max_length=128, null=True, region=None)),
+                ('phone', phonenumber_field.modelfields.PhoneNumberField(max_length=128, null=True, region=None)),
+                ('website', models.URLField(null=True)),
+            ],
+            options={
+                'abstract': False,
                 'ordering': ['external_id'],
             },
         ),

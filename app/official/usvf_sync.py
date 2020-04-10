@@ -109,6 +109,7 @@ def scrape_offices(session: requests.Session, regions: Sequence[Region]) -> None
                 office_action,
                 Office(
                     external_id=office["id"],
+                    region_id=int(office["region"].split("/")[-1]),
                     hours=office.get("hours"),
                     website=office.get("website"),
                     email=office.get("main_email"),

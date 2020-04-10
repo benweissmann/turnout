@@ -28,6 +28,7 @@ class Region(USVFModel):
 
 
 class Office(USVFModel):
+    region = models.ForeignKey(Region, null=True, on_delete=models.CASCADE)
     hours = models.TextField(null=True)
     # location = PointField(null=True)
     website = models.URLField(null=True)
