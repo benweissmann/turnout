@@ -1,9 +1,9 @@
 import logging
-from typing import Any, Dict, List
+from enum import Enum as PythonEnum
+from typing import Any, Dict, List, Sequence, Tuple
 
 import requests
 from django.conf import settings
-from enumfields import Enum
 
 from election.models import State
 
@@ -65,7 +65,8 @@ def scrape_regions(session: requests.Session) -> None:
     Region.objects.bulk_create(regions, ignore_conflicts=True)
 
 
-class Action(Enum):
+
+class Action(PythonEnum):
     INSERT = "Insert"
     UPDATE = "Update"
 
@@ -74,13 +75,13 @@ def scrape_offices(session: requests.Session) -> None:
     url = f"{API_ENDPOINT}/offices"
 
     existing_offices = Office.objects.values_list("external_id", flat=True)
-    offices_dict: Dict[(int, List[Action, Office])] = {}
+    offices_dict: Dict[(int, Tuple[Action, Office])] = {}
 
     existing_addresses = Address.objects.values_list("external_id", flat=True)
-    addresses_dict: Dict[(int, List[Action, Address])] = {}
+    addresses_dict: Dict[(int, Tuple[Action, Address])] = {}
 
     existing_officials = Official.objects.values_list("external_id", flat=True)
-    officials_dict: Dict[(int, List[Action, Officials])] = {}
+    officials_dict: Dict[(int, Tuple[Action, Official])] = {}
 
     while True:
         result = acquire_data(session, url)
@@ -91,10 +92,10 @@ def scrape_offices(session: requests.Session) -> None:
                 office_action = Action.UPDATE
             else:
                 office_action = Action.INSERT
-            offices_dict[office["id"]] = [
+            offices_dict[office["id"]] = (
                 office_action,
                 Office(external_id=office["id"], hours=office["hours"]),
-            ]
+            )
 
             for address in office.get("addresses", []):
                 # Process each address in the result
@@ -102,14 +103,14 @@ def scrape_offices(session: requests.Session) -> None:
                     address_action = Action.UPDATE
                 else:
                     address_action = Action.INSERT
-                addresses_dict[address["id"]] = [
+                addresses_dict[address["id"]] = (
                     address_action,
                     Address(
                         external_id=address["id"],
                         office_id=office["id"],
                         city=address.get("city"),
                     ),
-                ]
+                )
 
             for official in office.get("officials", []):
                 # Process each official in the result
@@ -117,14 +118,14 @@ def scrape_offices(session: requests.Session) -> None:
                     official_action = Action.UPDATE
                 else:
                     official_action = Action.INSERT
-                officials_dict[official["id"]] = [
+                officials_dict[official["id"]] = (
                     official_action,
                     Official(
                         external_id=official["id"],
                         office_id=office["id"],
                         title=official.get("title"),
                     ),
-                ]
+                )
 
         url = result["meta"].get("next")
         if not url:
