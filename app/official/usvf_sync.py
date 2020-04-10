@@ -10,7 +10,7 @@ from django.conf import settings
 from common.analytics import statsd
 from election.models import State
 
-from .models import Address, Office, Official, Region
+from .models import Address, Office, Region
 
 API_ENDPOINT = "https://api.usvotefoundation.org/eod/v3"
 
@@ -58,7 +58,8 @@ def scrape_regions(session: requests.Session) -> List[Region]:
                 Region(
                     external_id=usvf_region["id"],
                     name=usvf_region.get("region_name"),
-                    municipality=usvf_region.get("municipality_type"),
+                    municipality=usvf_region.get("municipality"),
+                    municipality_type=usvf_region.get("municipality_type"),
                     county=usvf_region.get("county_name"),
                     state_id=usvf_region.get("state_abbr"),
                 )
@@ -88,9 +89,6 @@ def scrape_offices(session: requests.Session, regions: Sequence[Region]) -> None
     existing_addresses = Address.objects.values_list("external_id", flat=True)
     addresses_dict: Dict[(int, Tuple[Action, Address])] = {}
 
-    existing_officials = Official.objects.values_list("external_id", flat=True)
-    officials_dict: Dict[(int, Tuple[Action, Official])] = {}
-
     next_url = f"{API_ENDPOINT}/offices?limit=100"
     while next_url:
         with statsd.timed("turnout.official.usvfcall.offices", sample_rate=0.2):
@@ -109,7 +107,14 @@ def scrape_offices(session: requests.Session, regions: Sequence[Region]) -> None
                 office_action = Action.INSERT
             offices_dict[office["id"]] = (
                 office_action,
-                Office(external_id=office["id"], hours=office["hours"]),
+                Office(
+                    external_id=office["id"],
+                    hours=office.get("hours"),
+                    website=office.get("website"),
+                    email=office.get("main_email"),
+                    phone=office.get("main_phone_number"),
+                    fax=office.get("main_fax_number"),
+                ),
             )
 
             for address in office.get("addresses", []):
@@ -123,22 +128,18 @@ def scrape_offices(session: requests.Session, regions: Sequence[Region]) -> None
                     Address(
                         external_id=address["id"],
                         office_id=office["id"],
+                        address=address.get("address_to"),
+                        address2=address.get("street1"),
+                        address3=address.get("street2"),
                         city=address.get("city"),
-                    ),
-                )
+                        state_id=address.get("state"),
+                        zipcode=address.get("zip"),
 
-            for official in office.get("officials", []):
-                # Process each official in the office
-                if official["id"] in existing_officials:
-                    official_action = Action.UPDATE
-                else:
-                    official_action = Action.INSERT
-                officials_dict[official["id"]] = (
-                    official_action,
-                    Official(
-                        external_id=official["id"],
-                        office_id=office["id"],
-                        title=official.get("title"),
+                        process_domestic_registrations="DOM_VR" in address["functions"],
+                        process_absentee_requests="DOM_REQ" in address["functions"],
+                        process_absentee_ballots="DOM_RET" in address["functions"],
+                        process_overseas_requests="OVS_REQ" in address["functions"],
+                        process_overseas_ballots="OVS_RET" in address["functions"],
                     ),
                 )
 
@@ -148,13 +149,10 @@ def scrape_offices(session: requests.Session, regions: Sequence[Region]) -> None
     logger.info("Found %(number)s Offices", {"number": len(offices_dict)})
     statsd.gauge("turnout.official.scraper.addresses", len(addresses_dict))
     logger.info("Found %(number)s Addresses", {"number": len(addresses_dict)})
-    statsd.gauge("turnout.official.scraper.officials", len(officials_dict))
-    logger.info("Found %(number)s Officials", {"number": len(officials_dict)})
 
     # Remove any records in our database but not in the result
     Office.objects.exclude(external_id__in=offices_dict.keys()).delete()
     Address.objects.exclude(external_id__in=addresses_dict.keys()).delete()
-    Official.objects.exclude(external_id__in=officials_dict.keys()).delete()
 
     # Create any records that are not already in our database
     Office.objects.bulk_create(
@@ -163,19 +161,19 @@ def scrape_offices(session: requests.Session, regions: Sequence[Region]) -> None
     Address.objects.bulk_create(
         [x[1] for x in addresses_dict.values() if x[0] == Action.INSERT]
     )
-    Official.objects.bulk_create(
-        [x[1] for x in officials_dict.values() if x[0] == Action.INSERT]
-    )
 
     # Update any records that are already in our database
     Office.objects.bulk_update(
-        [x[1] for x in offices_dict.values() if x[0] == Action.UPDATE], ["hours"]
+        [x[1] for x in offices_dict.values() if x[0] == Action.UPDATE],
+        ["hours", "website", "email", "phone", "fax"]
     )
     Address.objects.bulk_update(
-        [x[1] for x in addresses_dict.values() if x[0] == Action.UPDATE], ["city"]
-    )
-    Official.objects.bulk_update(
-        [x[1] for x in officials_dict.values() if x[0] == Action.UPDATE], ["title"]
+        [x[1] for x in addresses_dict.values() if x[0] == Action.UPDATE], 
+        [
+            "address", "address2", "address3", "city", "state", "zipcode",
+            "process_domestic_registrations", "process_absentee_requests", 
+            "process_absentee_ballots", "process_overseas_requests", "process_overseas_ballots"
+        ]
     )
 
 

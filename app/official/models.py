@@ -1,5 +1,7 @@
 from django.db import models
+from phonenumber_field.modelfields import PhoneNumberField
 
+from common.validators import zip_validator
 from common.utils.models import TimestampModel
 
 
@@ -27,6 +29,11 @@ class Region(USVFModel):
 
 class Office(USVFModel):
     hours = models.TextField(null=True)
+    # location = PointField(null=True)
+    website = models.URLField(null=True)
+    email = models.EmailField(null=True)
+    phone = PhoneNumberField(null=True)
+    fax = PhoneNumberField(null=True)
 
     class Meta:
         ordering = ["external_id"]
@@ -34,15 +41,18 @@ class Office(USVFModel):
 
 class Address(USVFModel):
     office = models.ForeignKey(Office, null=True, on_delete=models.CASCADE)
+    address = models.TextField(null=True)
+    address2 = models.TextField(null=True)
+    address3 = models.TextField(null=True)
     city = models.TextField(null=True)
+    state = models.ForeignKey("election.State", null=True, on_delete=models.PROTECT)
+    zipcode = models.TextField(null=True, validators=[zip_validator])
 
-    class Meta:
-        ordering = ["external_id"]
-
-
-class Official(USVFModel):
-    office = models.ForeignKey(Office, null=True, on_delete=models.CASCADE)
-    title = models.TextField(null=True)
+    process_domestic_registrations = models.BooleanField(default=False)
+    process_absentee_requests = models.BooleanField(default=False)
+    process_absentee_ballots = models.BooleanField(default=False)
+    process_overseas_requests = models.BooleanField(default=False)
+    process_overseas_ballots = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["external_id"]
