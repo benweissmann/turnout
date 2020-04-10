@@ -58,7 +58,7 @@ def scrape_regions(session: requests.Session) -> List[Region]:
                 Region(
                     external_id=usvf_region["id"],
                     name=usvf_region.get("region_name"),
-                    municipality=usvf_region.get("municipality"),
+                    municipality=usvf_region.get("municipality_name"),
                     municipality_type=usvf_region.get("municipality_type"),
                     county=usvf_region.get("county_name"),
                     state_id=usvf_region.get("state_abbr"),
