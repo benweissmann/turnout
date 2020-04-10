@@ -1,3 +1,5 @@
+# This code pulls the bare minimum necessary from the US Vote Foundation API for
+# local usage. The goal is to reduce the number of hits on the API and our database
 import logging
 from enum import Enum as PythonEnum
 from typing import Any, Dict, List, Sequence, Tuple
@@ -88,6 +90,7 @@ def scrape_offices(session: requests.Session) -> None:
 
         for office in result["objects"]:
             # Process each office in the result
+            # Process each office in the response
             if office["id"] in existing_offices:
                 office_action = Action.UPDATE
             else:
@@ -98,7 +101,7 @@ def scrape_offices(session: requests.Session) -> None:
             )
 
             for address in office.get("addresses", []):
-                # Process each address in the result
+                # Process each address in the office
                 if address["id"] in existing_addresses:
                     address_action = Action.UPDATE
                 else:
@@ -113,7 +116,7 @@ def scrape_offices(session: requests.Session) -> None:
                 )
 
             for official in office.get("officials", []):
-                # Process each official in the result
+                # Process each official in the office
                 if official["id"] in existing_officials:
                     official_action = Action.UPDATE
                 else:
