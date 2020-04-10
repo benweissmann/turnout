@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Sequence, Tuple
 import requests
 from django.conf import settings
 
+from common.analytics import statsd
 from election.models import State
 
 from .models import Address, Office, Official, Region
@@ -23,7 +24,7 @@ def authenticated_session() -> requests.Session:
 
 
 def acquire_data(session: requests.Session, url: str) -> Dict[(str, Any)]:
-    response = session.get(url, params={"limit": "100"})
+    response = session.get(url)
     extra = {"url": response.request.url, "status_code": response.status_code}
     if response.status_code != 200:
         logger.warning(
@@ -39,13 +40,17 @@ def acquire_data(session: requests.Session, url: str) -> Dict[(str, Any)]:
     return response.json()
 
 
-def scrape_regions(session: requests.Session) -> None:
+@statsd.timed("turnout.official.scrape_region")
+def scrape_regions(session: requests.Session) -> List[Region]:
     session = authenticated_session()
     regions: List[Region] = []
     supported_states = State.objects.values_list("code", flat=True)
-    url = f"{API_ENDPOINT}/regions"
-    while True:
-        result = acquire_data(session, url)
+
+    next_url = f"{API_ENDPOINT}/regions?limit=100"
+    while next_url:
+        with statsd.timed("turnout.official.usvfcall.regions", sample_rate=0.2):
+            result = acquire_data(session, next_url)
+
         for usvf_region in result["objects"]:
             if usvf_region.get("state_abbr") not in supported_states:
                 continue
@@ -59,13 +64,13 @@ def scrape_regions(session: requests.Session) -> None:
                 )
             )
 
-        url = result["meta"].get("next")
-        if not url:
-            break
+        next_url = result["meta"].get("next")
 
+    statsd.gauge("turnout.official.scraper.regions", len(regions))
     logger.info("Found %(number)s Regions", {"number": len(regions)})
     Region.objects.bulk_create(regions, ignore_conflicts=True)
 
+    return regions
 
 
 class Action(PythonEnum):
@@ -73,8 +78,9 @@ class Action(PythonEnum):
     UPDATE = "Update"
 
 
-def scrape_offices(session: requests.Session) -> None:
-    url = f"{API_ENDPOINT}/offices"
+@statsd.timed("turnout.official.scrape_offices")
+def scrape_offices(session: requests.Session, regions: Sequence[Region]) -> None:
+    existing_region_ids = [region.external_id for region in regions]
 
     existing_offices = Office.objects.values_list("external_id", flat=True)
     offices_dict: Dict[(int, Tuple[Action, Office])] = {}
@@ -85,11 +91,17 @@ def scrape_offices(session: requests.Session) -> None:
     existing_officials = Official.objects.values_list("external_id", flat=True)
     officials_dict: Dict[(int, Tuple[Action, Official])] = {}
 
-    while True:
-        result = acquire_data(session, url)
+    next_url = f"{API_ENDPOINT}/offices?limit=100"
+    while next_url:
+        with statsd.timed("turnout.official.usvfcall.offices", sample_rate=0.2):
+            result = acquire_data(session, next_url)
 
         for office in result["objects"]:
-            # Process each office in the result
+            # Check that the region is valid (we don't support US territories)
+            region_id = int(office["region"].rsplit("/", 1)[1])
+            if region_id not in existing_region_ids:
+                continue
+
             # Process each office in the response
             if office["id"] in existing_offices:
                 office_action = Action.UPDATE
@@ -130,12 +142,13 @@ def scrape_offices(session: requests.Session) -> None:
                     ),
                 )
 
-        url = result["meta"].get("next")
-        if not url:
-            break
+        next_url = result["meta"].get("next")
 
+    statsd.gauge("turnout.official.scraper.offices", len(offices_dict))
     logger.info("Found %(number)s Offices", {"number": len(offices_dict)})
+    statsd.gauge("turnout.official.scraper.addresses", len(addresses_dict))
     logger.info("Found %(number)s Addresses", {"number": len(addresses_dict)})
+    statsd.gauge("turnout.official.scraper.officials", len(officials_dict))
     logger.info("Found %(number)s Officials", {"number": len(officials_dict)})
 
     # Remove any records in our database but not in the result
@@ -169,5 +182,5 @@ def scrape_offices(session: requests.Session) -> None:
 def scrape() -> None:
     session = requests.Session()
     session.headers["Authorization"] = f"OAuth {settings.USVOTEFOUNDATION_KEY}"
-    scrape_regions(session)
-    scrape_offices(session)
+    regions = scrape_regions(session)
+    scrape_offices(session, regions)
