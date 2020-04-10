@@ -12,7 +12,6 @@ class USVFModel(TimestampModel):
 
 
 class Region(USVFModel):
-    external_id = models.IntegerField(unique=True)
     name = models.TextField(null=True)
     municipality = models.TextField(null=True, db_index=True)
     municipality_type = models.TextField(null=True)
@@ -29,12 +28,21 @@ class Region(USVFModel):
 class Office(USVFModel):
     hours = models.TextField(null=True)
 
+    class Meta:
+        ordering = ["external_id"]
+
 
 class Address(USVFModel):
     office = models.ForeignKey(Office, null=True, on_delete=models.CASCADE)
     city = models.TextField(null=True)
 
+    class Meta:
+        ordering = ["external_id"]
+
 
 class Official(USVFModel):
     office = models.ForeignKey(Office, null=True, on_delete=models.CASCADE)
     title = models.TextField(null=True)
+
+    class Meta:
+        ordering = ["external_id"]
