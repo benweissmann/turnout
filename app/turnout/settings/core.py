@@ -83,6 +83,7 @@ THIRD_PARTY_APPS = [
     "phonenumber_field",
     "django_otp",
     "s3_folder_storage",
+    "nested_inline",
 ]
 
 FIRST_PARTY_APPS = [
