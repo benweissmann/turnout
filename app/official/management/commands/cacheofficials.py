@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from official.scraper import scrape
+from official.usvf_sync import sync
 
 
 class Command(BaseCommand):
@@ -8,4 +8,4 @@ class Command(BaseCommand):
     requires_system_checks = False
 
     def handle(self, *args, **options):
-        scrape()
+        sync()

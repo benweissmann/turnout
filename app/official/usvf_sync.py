@@ -179,7 +179,7 @@ def scrape_offices(session: requests.Session, regions: Sequence[Region]) -> None
     )
 
 
-def scrape() -> None:
+def sync() -> None:
     session = requests.Session()
     session.headers["Authorization"] = f"OAuth {settings.USVOTEFOUNDATION_KEY}"
     regions = scrape_regions(session)
