@@ -12,7 +12,17 @@ class StateRegionsViewSet(mixins.ListModelMixin,
 
     def get_queryset(self):
         state_code = self.kwargs['state']
-        return Region.objects.filter(state__code=state_code)
+        queryset = Region.objects.filter(state__code=state_code)
+
+        county = self.request.query_params.get('county', None)
+        if county:
+            queryset = queryset.filter(county=county)
+
+        municipality = self.request.query_params.get('municipality', None)
+        if municipality:
+            queryset = queryset.filter(municipality=municipality)
+        
+        return queryset
 
 
 class RegionDetailViewSet(mixins.RetrieveModelMixin,
