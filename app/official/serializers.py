@@ -13,7 +13,10 @@ class AddressSerializer(serializers.ModelSerializer):
         model = Address
         fields = (
             "address", "address2", "address3", "city", "state", "zipcode", 
-            "website", "email", "phone", "fax", "is_physical", "is_regular_mail")
+            "website", "email", "phone", "fax", "is_physical", "is_regular_mail",
+            "process_domestic_registrations", "process_absentee_requests", 
+            "process_absentee_ballots", "process_overseas_requests", "process_overseas_ballots"
+        )
 
 
 class OfficeSerializer(serializers.ModelSerializer):
