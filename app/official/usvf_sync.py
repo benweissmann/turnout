@@ -133,10 +133,13 @@ def scrape_offices(session: requests.Session, regions: Sequence[Region]) -> None
                         state_id=address.get("state"),
                         zipcode=address.get("zip"),
 
-                        website=office.get("website"),
-                        email=office.get("main_email"),
-                        phone=office.get("main_phone_number"),
-                        fax=office.get("main_fax_number"),
+                        website=address.get("website"),
+                        email=address.get("main_email"),
+                        phone=address.get("main_phone_number"),
+                        fax=address.get("main_fax_number"),
+
+                        is_physical=address.get("is_physical"),
+                        is_regular_mail=address.get("is_regular_mail"),
 
                         process_domestic_registrations="DOM_VR" in address["functions"],
                         process_absentee_requests="DOM_REQ" in address["functions"],

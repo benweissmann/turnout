@@ -20,7 +20,10 @@ class AddressInlineAdmin(NestedStackedInline):
     fields = (
         "address", "address2", "address3", "city", "state", "zipcode",
         "website", "email", "phone", "fax",
-        "is_physical", "is_regular_mail"
+        "is_physical", "is_regular_mail",
+        "process_domestic_registrations",
+        "process_absentee_requests",
+        "process_absentee_ballots"   
     )
     extra = 0
 
