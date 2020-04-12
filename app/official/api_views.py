@@ -1,14 +1,23 @@
-from rest_framework.viewsets import ReadOnlyModelViewSet
+from rest_framework import mixins, viewsets
 
 from .models import Region, Office, Address
-from .serializers import RegionOfficeAddressSerializer
+from .serializers import RegionNameSerializer, RegionDetailSerializer
 
 
-class RegionViewSet(ReadOnlyModelViewSet):
+class StateRegionsViewSet(mixins.ListModelMixin,
+                    mixins.RetrieveModelMixin,
+                    viewsets.GenericViewSet):
     model = Region
-    serializer_class = RegionOfficeAddressSerializer
+    serializer_class = RegionNameSerializer
 
-    def get_queryset(self, pk):
-        "gets regions for a particular state"
-        state = self.kwargs['pk']
-        return Region.objects.filter(state__code=state)
+    def get_queryset(self):
+        state_code = self.kwargs['state']
+        return Region.objects.filter(state__code=state_code)
+
+
+class RegionDetailViewSet(mixins.RetrieveModelMixin,
+                          viewsets.GenericViewSet):
+    model = Region
+    serializer_class = RegionDetailSerializer
+    queryset = Region.objects.all()
+    lookup_field = "external_id"
